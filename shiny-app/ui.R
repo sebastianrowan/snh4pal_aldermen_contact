@@ -22,6 +22,11 @@ fluidPage(
     sidebarPanel(
       
       textInput(
+        "name",
+        "Full Name:"
+      ),
+      
+      textInput(
         "addr",
         "Street Address:",
         value = "900 Elm St"
@@ -29,7 +34,9 @@ fluidPage(
       selectInput(
         "city",
         "City/Town:",
-        c("Concord", "Dover", "Durham", "Lebanon", "Manchester", "Nashua", "Portsmouth"),
+        c(
+          "Concord", "Dover", "Manchester", "Nashua"
+        ),
         selected = "Manchester",
         multiple = FALSE,
         selectize = TRUE
@@ -42,12 +49,12 @@ fluidPage(
         multiple = FALSE,
         selectize = FALSE
       ),
-      actionButton("getWardBtn", "Get Ward")
+      actionButton("getWardBtn", "Enter"),
+      p("Information entered in this form will not be collected or stored.")
       
     ),
     
     mainPanel(
-      h2("Local Officials:"),
       htmlOutput('wardResult'),
       # h2("State Officials:"),
       # textOutput("stateResult"),
