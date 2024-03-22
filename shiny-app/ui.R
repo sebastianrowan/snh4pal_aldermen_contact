@@ -1,12 +1,3 @@
-#
-# This is the user-interface definition of a Shiny web application. You can
-# run the application by clicking 'Run App' above.
-#
-# Find out more about building applications with Shiny here:
-#
-#    https://shiny.posit.co/
-#
-
 library(shiny)
 
 
@@ -28,18 +19,18 @@ fluidPage(
       
       textInput(
         "addr",
-        "Street Address:",
-        value = "900 Elm St"
+        "Street Address:"
       ),
       selectInput(
         "city",
         "City/Town:",
-        c(
-          "Concord", "Dover", "Manchester", "Nashua"
-        ),
-        selected = "Manchester",
+        # c(
+        #   "Concord", "Dover", "Manchester", "Nashua"
+        # ),
+        c("Dover"),
+        selected ="Dover",
         multiple = FALSE,
-        selectize = TRUE
+        selectize = FALSE
       ),
       selectInput(
         "state",

@@ -10,6 +10,7 @@
 # setwd(dirname(rstudioapi::getActiveDocumentContext()$path))
 
 library(shiny)
+library(tidyverse)
 library(tidygeocoder)
 library(sf)
 library(glue)
@@ -22,7 +23,7 @@ function(input, output, session) {
     add <- input$addr
     city <- input$city
     state <- input$state
-    addr <- paste(add, city, state)
+    addr <- paste(add, city, state, sep = ", ")
     
     wards <- read_sf("data/nh_wards_2022.geojson")
     aldermen <- readxl::read_excel("data/aldermen.xlsx", sheet="officials")
@@ -42,11 +43,14 @@ function(input, output, session) {
     # Message parts
     # Greeting: "Dear Alderman ...,"
     msg <- glue(
-      "My name is {name}, and my address is {addr}.\n\n{msg}\n\nSincerely,\n\n{name}"
+      "My name is {name}, and my address is {addr}.\n\n{msg}\n\nSincerely,\n\n{name}\n{addr}"
     )
     
-    
-    if (!is.na(addr)) {
+    if( is.na(name) | name == "" ){
+      output$wardResult <- renderText("Please enter your full name in the form.")
+    } else if ( is.na(add) | add == "") {
+      output$wardResult <- renderText("Please enter your address in the form.")
+    } else if (!is.na(addr)) {
       address <- tibble::tribble(
         ~name,    ~addr,
         "addr",   addr                              
@@ -55,7 +59,7 @@ function(input, output, session) {
       lat_longs <- address %>%
         geocode(addr, method = 'osm', lat = latitude , long = longitude)
       
-      if(!is.na(lat_longs$latitude)){
+      if ( !is.na(lat_longs$latitude)){
         pt_df <- data.frame(latitude = lat_longs$latitude, longitude = lat_longs$longitude)
         point <- sf::st_as_sf(pt_df, coords = c('longitude', 'latitude'))
         point <- st_set_crs(point, st_crs(wards))
@@ -66,13 +70,17 @@ function(input, output, session) {
             point,
             join = st_intersects,
             left = FALSE
+          ) %>%
+          mutate(
+            is_mayor = (role == "Mayor")
           )
         
         ward <- in_wards %>%
           filter(
             !is.na(name),
             level == "Local"
-          )
+          ) %>%
+          arrange(desc(is_mayor))
         
         # Generate mailto:all
         all_msg <- glue("Dear {paste(ward$title, collapse = ', ')},\n\n{msg}")
@@ -112,22 +120,19 @@ function(input, output, session) {
           sep = " | "
         )
         
-        #
-        
-        
         if (length(ward) > 0) {
           output$wardResult <- renderText(paste(
-            p("Your elected officials are:"), 
+            h2("Your elected officials are:"), 
             paste(ward$display_text, collapse = "<br>"),
             h3("Email your officials"),
-            p("Click on your representatives' email address above to generate a pre-filled email demanding they do everything in their power to advocate for a ceasefire in Gaza."),
-            p("Or click", a("here", href=all_mailto), "to send the message to all of the representatives shown above."),
-            p("The email will be generated with the following message that you can edit yourself before sending:"),
+            p("Click on your representative's email address above to generate a pre-filled email demanding they do everything in their power to advocate for a ceasefire in Gaza."),
+            p(span(a("Or click here", href=all_mailto), style="font-size: 200%"), "to send the message to all of the representatives shown above at once."),
+            p("The email will be generated with the message shown below, and we encourage you to add your own statements about why you personally think this is important!"),
             br(),
             p(HTML(str_replace_all(all_msg, "\n","<br>")))
             ))
         } else {
-          output$wardResult <- renderText(paste("Unable to determine ward. lat/lon = ", lat_longs$latitude, lat_longs$longitude))
+          output$wardResult <- renderText(paste("Unable to determine ward. Please check your address and try again"))
         } 
       } else {
         output$wardResult <- renderText("The address you entered does not appear to be valid. Please try again.")
